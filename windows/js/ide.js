@@ -14,7 +14,6 @@ angular.module('MindDesktop.ide', [])
 	$scope.tabs=$ide.getTabs();
 
 	$scope.$on('$ide.content',function(ev,data){
-
 		editor.getSession().setMode("ace/mode/" + data.mime.toLowerCase());
 		$scope.code=data.content;
 
@@ -31,7 +30,8 @@ angular.module('MindDesktop.ide', [])
 		}
 		else {
 			$scope.currentTab=index;
-		}		
+		}
+		$scope.$digest();		
 	})
 
 	$scope.$on('$ide.tabclose',function(ev,path){
@@ -52,6 +52,7 @@ angular.module('MindDesktop.ide', [])
 	$scope.aceLoaded=function(_editor){
 		editor=_editor;
 		_editor.setFontSize(fontSize);
+		_editor.$blockScrolling = "Infinity";
 		_editor.commands.addCommand({
 		    name: "increase_font",
 		    bindKey: {win: "Ctrl-Up", mac: "Command-Up"},
@@ -125,8 +126,7 @@ angular.module('MindDesktop.ide', [])
   		return q.promise;
   	}
 
-  	var getFile=function(path,name){
-		var q=$q.defer();
+  	var renderFile=function(path,name){
 		fs.readFile(path, 'utf8', function (err,data) {
 		  if (err) {
 		    return console.log(err);
@@ -137,32 +137,29 @@ angular.module('MindDesktop.ide', [])
 		  if (file_mime.indexOf('javascript')!=-1){
 		  	file_mime='javascript'
 		  }
-
-		  if (file_mime.indexOf('html')!=-1){
+		  else if (file_mime.indexOf('html')!=-1){
 		  	file_mime='html'
 		  }
-
-		  if (file_mime.indexOf('json')!=-1){
+		  else if (file_mime.indexOf('json')!=-1){
 		  	file_mime='json'
 		  }
-
-		  if (file_mime.indexOf('markdown')!=-1){
+		  else if (file_mime.indexOf('markdown')!=-1){
+		  	file_mime='markdown'
+		  }
+		  else if (file_mime.indexOf('css')!=-1){
+		  	file_mime='css'
+		  }
+		  else {
 		  	file_mime='markdown'
 		  }
 
-		  if (file_mime.indexOf('css')!=-1){
-		  	file_mime='css'
-		  }
-
-		  q.resolve({
+		  $rootScope.$broadcast('$ide.content',{
 		  	mime:file_mime,
 		  	content:data,
 		  	path:path,
 		  	name:name
 		  })
 		});
-
-		return q.promise;
 	}
 
 	var getTabs=function(){
@@ -180,7 +177,7 @@ angular.module('MindDesktop.ide', [])
 
 	self={
 		getProjectFiles:getProjectFiles,
-		getFile:getFile,
+		renderFile:renderFile,
 		getTabs:getTabs,
 		save:save,
 	}
@@ -214,7 +211,6 @@ angular.module('MindDesktop.ide', [])
 
 			var fs = require('fs');
 
-
 			element.css('paddingLeft','20px');
 			// element.css('height','18px');
 			
@@ -231,7 +227,7 @@ angular.module('MindDesktop.ide', [])
 				var containerTpl="<div></div>";
 				var container=$compile(containerTpl)(scope);
 				// container.css('webkitTransition','all 0.5s ease');
-				// container.css('overflow','hidden')
+				container.css('overflow','hidden')
 				element.append(container);
 
 				section.addClass('ion-ios-arrow-right');
@@ -275,24 +271,23 @@ angular.module('MindDesktop.ide', [])
 			}
 			else {
 
-				// var coverTpl="<div></div>";
-				// var cover=$compile(coverTpl)(scope);
-
-				// cover.css('width','400px')
-
-				// cover.css('position','absolute')
-				// cover.css('top','0');
-				// cover.css('left','-200px')
-
 				section.bind('click',function(){
-					console.log('I am going to open!')
-					$ide.getFile(scope.path,scope.name).then(function(file){
-						scope.$emit('$ide.content',file);
-					})
+					$ide.renderFile(scope.path,scope.name)
 				})
+				
+				scope.$on('$ide.content',function(ev,file){
+                    if (file.path==scope.path) {
+                        section.css('opacity','1');
+                        section.css('background','rgb(52,83,145)');
+                    }
+                    else {
+                        section.css('opacity','0.7');
+                        section.css('background','transparent');
+                    }
+                })
 			}
 			
-
+            
 			// $ide.getProjectFiles()
 		}
 	};
@@ -314,12 +309,13 @@ angular.module('MindDesktop.ide', [])
 		// transclude: true,
 		// compile: function(tElement, tAttrs, function transclude(function(scope, cloneLinkingFn){ return function linking(scope, elm, attrs){}})),
 		link: function(scope,element,attrs) {
-			element.css('width',(window.innerWidth-200)+'px')
-			element.css('height','30px');
-			element.css('position','absolute');
-			element.css('top','70px');
-			element.css('textAlign','left');
-			element.css('display','flex');
+			element.addClass('ide-file-tabs')
+			// element.css('width',(window.innerWidth-200)+'px')
+			// element.css('height','30px');
+			// element.css('position','absolute');
+			// element.css('top','70px');
+			// element.css('textAlign','left');
+			// element.css('display','flex');
 		}
 	};
 }])
@@ -373,10 +369,17 @@ angular.module('MindDesktop.ide', [])
 			element.append(closeIcon);
 
 			element.bind('click',function(event){
-				$ide.getFile(scope.tab.path,scope.tab.name).then(function(file){
-					scope.$emit('$ide.content',file);
-				})
+				$ide.renderFile(scope.tab.path,scope.tab.name)
 			})
+
+			scope.$on('$ide.content',function(ev,file){
+                if (file.path==scope.tab.path) {
+                	element.addClass('ace-ambiance ace-dark')
+                }
+                else {
+					element.removeClass('ace-ambiance ace-dark')
+                }
+            })
 			// height: 30px;
 			// max-width: 250px;
 			// line-height: 30px;

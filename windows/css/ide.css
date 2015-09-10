@@ -60,8 +60,8 @@
 
 .mind-desktop-ide-section:before {
 	position: absolute;
-	left: 10px;
-	top: 3px;
+	left: -10px;
+    top: 1px;
 }
 
 .mind-desktop-ide-section.open:before {
@@ -70,6 +70,8 @@
 
 .ide-folders-inner section {
 	opacity: 0.7;
+	position: relative;
+	z-index: 1;
 }
 
 .ide-folders-inner section:hover {
@@ -85,6 +87,8 @@
 
 	text-align: left;
 	display: flex;
+
+	background: #131313;
 }
 
 .ide-file-tab {
@@ -95,7 +99,7 @@
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: grey;
+    background: transparent;
     padding: 0 10px;
     margin: 0;
     font-size: 12px;
