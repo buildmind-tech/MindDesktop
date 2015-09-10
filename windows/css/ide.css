@@ -43,6 +43,7 @@
 	overflow-y:scroll;
 	height: 100%;
 	font-size: 13px;
+	padding: 0 10px;
 }
 
 .ide-folders-inner::-webkit-scrollbar {

@@ -86,10 +86,71 @@ angular.module('MindDesktop.ide', [])
 
 }])
 
-.factory('$ide', ['$rootScope','$q', function($rootScope,$q){
+.controller('IDERenameCtrl', function($mdDialog,$scope,name){
+	$scope.name=name;
+})
+
+.directive('selectAll',function($timeout){
+	return {
+		link:function(scope,element,attrs){
+			$timeout(function(){
+				element[0].focus();
+				element[0].select();
+			},200)
+			
+		}
+	}
+})
+
+.factory('$ide', ['$rootScope','$q','$mdDialog', function($rootScope,$q,$mdDialog){
 	var self = this;
 	// var dir = require('node-dir');
   	var fs = require('fs');
+  	var remote = require('remote');
+    var Menu = remote.require('menu');
+    var MenuItem = remote.require('menu-item');
+    var shell = require('shell');
+    
+    var contextMenu={
+        file: new Menu(),
+        folder:new Menu(),
+        rootFolder:new Menu(),
+    }
+    
+    var contextMenuOperating={};
+
+    contextMenu.file.append(new MenuItem({ label: 'Rename', click: function($event) { 
+    	var name=contextMenuOperating.name;
+    	$mdDialog.show({
+	       	targetEvent: $event,
+	       	templateUrl: 'templates/ide-rename.html',
+         	locals: {
+           		name:name
+         	},
+         	clickOutsideToClose:true,
+         	controller: 'IDERenameCtrl'
+		})
+    } }));
+    contextMenu.file.append(new MenuItem({ label: 'Delete', click: function() { console.log('item 1 clicked'); } }));
+    contextMenu.file.append(new MenuItem({ label: 'Open In Folder', click: function() { 
+    	// console.log('wtf you are opening '+contextMenuOperatingPath);
+    	console.log(shell)
+    	shell.showItemInFolder(contextMenuOperating.path);
+    } }));
+    
+    contextMenu.folder.append(new MenuItem({ label: 'Rename', click: function() { console.log('item 1 clicked'); } }));
+    contextMenu.folder.append(new MenuItem({ label: 'New File', click: function() { console.log('item 1 clicked'); } }));
+    contextMenu.folder.append(new MenuItem({ type: 'separator' }));
+    contextMenu.folder.append(new MenuItem({ label: 'New Folder', click: function() { console.log('item 1 clicked'); } }));
+    contextMenu.folder.append(new MenuItem({ label: 'Delete Folder', click: function() { console.log('item 1 clicked'); } }));
+
+    contextMenu.rootFolder.append(new MenuItem({ label: 'Rename', click: function() { console.log('item 1 clicked'); } }));
+    contextMenu.rootFolder.append(new MenuItem({ label: 'New File', click: function() { console.log('item 1 clicked'); } }));
+    contextMenu.rootFolder.append(new MenuItem({ type: 'separator' }));
+    contextMenu.rootFolder.append(new MenuItem({ label: 'New Folder', click: function() { console.log('item 1 clicked'); } }));
+    contextMenu.rootFolder.append(new MenuItem({ label: 'Delete Folder', click: function() { console.log('item 1 clicked'); } }));
+    contextMenu.rootFolder.append(new MenuItem({ label: 'Remove Project', click: function() { console.log('item 1 clicked'); } }));
+
   	var tabs=[];
  	
 
@@ -174,12 +235,26 @@ angular.module('MindDesktop.ide', [])
 		    console.log("The file was saved!");
 		}); 
 	}
+	
+	var showContextMenu=function(type,event){
+	    contextMenu[type].popup(remote.getCurrentWindow(),event.x,event.y);
+	}
+	
+	var setContextMenuOperatingPath=function(path,name){
+	    contextMenuOperating={
+	    	path:path,
+	    	name:name,
+	    };
+	};
 
 	self={
 		getProjectFiles:getProjectFiles,
 		renderFile:renderFile,
 		getTabs:getTabs,
 		save:save,
+		
+		showContextMenu:showContextMenu,
+		setContextMenuOperatingPath:setContextMenuOperatingPath
 	}
 
 	return self;
@@ -211,7 +286,7 @@ angular.module('MindDesktop.ide', [])
 
 			var fs = require('fs');
 
-			element.css('paddingLeft','20px');
+			element.css('paddingLeft','10px');
 			// element.css('height','18px');
 			
 			element.css('position','relative');
@@ -223,6 +298,22 @@ angular.module('MindDesktop.ide', [])
 			if (!scope.type || scope.type=="dir"){
 				scope.open=false;
 				scope.sub=[];
+				
+				// Context Menu
+				if ('root' in attrs) {
+				    section.bind('contextmenu',function(e){
+    			        e.preventDefault();
+    			        $ide.setContextMenuOperatingPath(scope.path,scope.name);
+    			        $ide.showContextMenu('rootFolder',e);
+    			    })
+				}
+				else {
+				    section.bind('contextmenu',function(e){
+    			        e.preventDefault();
+    			        $ide.setContextMenuOperatingPath(scope.path,scope.name);
+    			        $ide.showContextMenu('folder',e);
+    			    })
+				}
 
 				var containerTpl="<div></div>";
 				var container=$compile(containerTpl)(scope);
@@ -269,12 +360,21 @@ angular.module('MindDesktop.ide', [])
 					scope.open=!scope.open;
 				})
 			}
-			else {
+			else {   // File
+			
+			    // Context Menu
+			    section.bind('contextmenu',function(e){
+			        e.preventDefault();
+			        $ide.setContextMenuOperatingPath(scope.path,scope.name);
+			        $ide.showContextMenu('file',e);
+			    })
 
+                // File Render
 				section.bind('click',function(){
 					$ide.renderFile(scope.path,scope.name)
 				})
 				
+				// Listener for content Change
 				scope.$on('$ide.content',function(ev,file){
                     if (file.path==scope.path) {
                         section.css('opacity','1');

@@ -2,7 +2,7 @@
 	<div class="ide-folders-container">
 		<div class="ide-folders-inner ace-ambiance ace-dark">
 			<h4><b>FOLDERS</b></h4>
-			<ide-folder path="C:/Users/Tony/Desktop/MindDesktop" name="MindDesktop" type="dir"></ide-folder>
+			<ide-folder path="C:/Users/Tony/Desktop/MindDesktop" name="MindDesktop" type="dir" root></ide-folder>
 		</div>
 	</div>
 	<ide-tabs>
@@ -16,6 +16,8 @@
 		mode: 'xml',
 		firstLineNumber: 1,
 		onLoad: aceLoaded,
-		onChange: aceChanged
+		onChange: aceChanged,
+		showPrintMargin:false,
+		enableBasicAutocompletion: true
 	}" ng-model="code"></div>
 </div>
