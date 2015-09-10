@@ -1,0 +1,21 @@
+<div class="ide-container">
+	<div class="ide-folders-container">
+		<div class="ide-folders-inner ace-ambiance ace-dark">
+			<h4><b>FOLDERS</b></h4>
+			<ide-folder path="C:/Users/Tony/Desktop/MindDesktop" name="MindDesktop" type="dir"></ide-folder>
+		</div>
+	</div>
+	<ide-tabs class="ace-ambiance ace-dark">
+		<ide-tab ng-repeat="tab in tabs">{{tab.name}}</ide-tab>
+	</ide-tabs>
+	<div ui-ace="{
+		require:['ace/ext/keybinding_menu','ace/ext/language_tools'],
+		useWrapMode : true,
+	  	showGutter: true,
+		theme:'ambiance',
+		mode: 'xml',
+		firstLineNumber: 1,
+		onLoad: aceLoaded,
+		onChange: aceChanged
+	}" ng-model="code"></div>
+</div>

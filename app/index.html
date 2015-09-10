@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello World!</title>
+
+    <link rel="stylesheet" type="text/css" href="bower_components/angular-material/angular-material.min.css">
+    <link rel="stylesheet" type="text/css" href="bower_components/Ionicons/css/ionicons.min.css">
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <link rel="stylesheet" type="text/css" href="css/ssh.css">
+    <link rel="stylesheet" type="text/css" href="css/ide.css">
+  </head>
+  <body ng-app="MindDesktop" ng-controller="MainCtrl">
+    
+    <div class="main-body">
+        <div id="head-bar">
+            <div class="head-bar-cover"></div>
+            <div class="head-bar-content">
+                <md-button class="desktop-tabs"
+                    ng-repeat="tab in tabs"
+                    ng-class="{'selected':$index==slides}"
+                    ng-click="select($index)"
+                >
+                    {{tab.name}}
+                </md-button>   
+            </div>
+        </div>
+
+        <desktop-tabs-body-container>
+            <desktop-tabs-body
+                
+            >
+            </desktop-tabs-body>
+
+            <desktop-tabs-body
+                template-url="templates/server.html"
+                ng-controller="ServerCtrl"
+            >
+            </desktop-tabs-body>
+
+            <desktop-tabs-body
+                template-url="templates/ide.html"
+                ng-controller="IDECtrl"
+            >
+            </desktop-tabs-body>
+
+            <desktop-tabs-body>
+            </desktop-tabs-body>
+
+            <desktop-tabs-body>
+            </desktop-tabs-body>
+        </desktop-tabs-body-container>
+
+        
+    </div>
+    <!-- We are using io.js <script>document.write(process.version)</script>
+    and Electron <script>document.write(process.versions['electron'])</script>. -->
+    <script type="text/javascript" src="bower_components/underscore/underscore-min.js"></script>
+
+    <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ace.js"></script>
+    <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ext-keybinding_menu.js"></script>
+    <script type="text/javascript" src="bower_components/ace-builds/src-min-noconflict/ext-language_tools.js"></script>
+
+    <script type="text/javascript" src="bower_components/angular/angular.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-animate/angular-animate.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-aria/angular-aria.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-material/angular-material.min.js"></script>
+    <script type="text/javascript" src="bower_components/angular-ui-router/release/angular-ui-router.min.js"></script>
+
+    <script type="text/javascript" src="bower_components/angular-ui-ace/ui-ace.js"></script>
+
+
+    <script type="text/javascript" src="bower_components/angular-hotkeys/build/hotkeys.min.js"></script>
+
+    <script type="text/javascript" src="js/window.js"></script>
+    <script type="text/javascript" src="js/ssh.js"></script>
+    <script type="text/javascript" src="js/tabs.js"></script>
+    <script type="text/javascript" src="js/server.js"></script>
+    <script type="text/javascript" src="js/ide.js"></script>
+
+    <script type="text/javascript">
+    /**
+    * MindDesktop Module
+    *
+    * Description
+    */
+    var desktop=require('./modules/desktop.js');
+    
+    var ipc = require('ipc');
+    angular.module('MindDesktop', ['MindDesktop.window','MindDesktop.ssh','MindDesktop.tabs','MindDesktop.server','MindDesktop.ide','ngMaterial','ui.ace','cfp.hotkeys'])
+    .run(function($timeout){
+    	
+    })
+    .controller('MainCtrl', ['$scope','$timeout','$tabs',function($scope,$timeout,$tabs){
+    	$scope.slides=1
+    	$scope.fullsize=false;
+    	$scope.outputs=[];
+    	$scope.files=[];
+
+        $scope.tabs=$tabs.get();
+
+    	$scope.select=function(index){
+    		$scope.slides=index;
+    	}
+
+    	$timeout(function(){
+    		$scope.files=desktop.getFiles();
+    		// console.log($scope.files);
+
+    		console.log(_.filter($scope.files, function(file){
+    			return file.type=="link";
+    		}));
+    	},200)	
+    }])
+    </script>
+  </body>
+</html>

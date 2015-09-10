@@ -1,0 +1,9 @@
+<div class="server-container">
+	<h2>Servers</h2>
+	<p>Create and Manage Servers</p>
+
+	<md-button class="server-blocks" ng-repeat="server in servers" ng-click="check($event,$index)">
+		{{server.name}}
+	</md-button>
+
+</div>

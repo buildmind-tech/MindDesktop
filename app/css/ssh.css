@@ -1,0 +1,24 @@
+#shell {
+
+}
+
+#shell .shell-item {
+	width: 100%;
+}
+
+#shell .shell-item:nth-last-child(2){
+	width: initial;
+	display: inline-block;
+}
+
+#shell-input {
+	border: 0px;
+    color: white;
+    position: relative;
+    z-index: 1;
+    background-color: transparent;
+}
+
+#shell-input:focus {
+    outline: -webkit-focus-ring-color auto 0px;
+}

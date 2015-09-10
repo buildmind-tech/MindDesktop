@@ -1,0 +1,7 @@
+<div style="height:100%;word-spacing:5px;">
+	<md-virtual-repeat-container style="height:100%" id="shell">
+	  <div md-virtual-repeat="i in items" style="color:white" md-item-size="20" class="shell-item" ng-bind-html="trustAsHtml(i)"></div>
+	  <input type="text" id="shell-input" ng-model="input">
+	</md-virtual-repeat-container>
+
+</div>
