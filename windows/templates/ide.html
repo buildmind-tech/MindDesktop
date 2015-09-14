@@ -2,11 +2,11 @@
 	<div class="ide-folders-container">
 		<div class="ide-folders-inner ace-ambiance ace-dark">
 			<h4><b>FOLDERS</b></h4>
-			<ide-folder path="C:/Users/Tony/Desktop/MindDesktop" name="MindDesktop" type="dir" root></ide-folder>
+			<ide-folder path="C:/Users/Tony/Desktop/MindDesktop/" name="MindDesktop" type="dir" root></ide-folder>
 		</div>
 	</div>
 	<ide-tabs>
-		<ide-tab ng-repeat="tab in tabs">{{tab.name}}</ide-tab>
+		<ide-tab ng-repeat="tab in ideTabs">{{tab.name}}</ide-tab>
 	</ide-tabs>
 	<div ui-ace="{
 		require:['ace/ext/keybinding_menu','ace/ext/language_tools'],

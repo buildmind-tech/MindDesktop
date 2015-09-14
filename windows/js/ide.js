@@ -4,6 +4,12 @@
 * Description
 */
 angular.module('MindDesktop.ide', [])
+.run(function($ide,$timeout){
+	$timeout(function(){
+		$ide.recoverFromHistory();
+	},1000)
+	
+})
 .controller('IDECtrl', ['$rootScope','$scope','$http','hotkeys','$ide', function($rootScope,$scope,$http,hotkeys,$ide){
 
 	var element;
@@ -11,7 +17,7 @@ angular.module('MindDesktop.ide', [])
 	var fontSize=20;
 
 	$scope.code="";
-	$scope.tabs=$ide.getTabs();
+	$scope.ideTabs=[];
 
 	$scope.$on('$ide.content',function(ev,data){
 		editor.getSession().setMode("ace/mode/" + data.mime.toLowerCase());
@@ -19,30 +25,40 @@ angular.module('MindDesktop.ide', [])
 
 		var index=-1;
 		
-		for (var i=0;i<$scope.tabs.length;i++){
-			if ($scope.tabs[i].path==data.path) {
+		for (var i=0;i<$scope.ideTabs.length;i++){
+			if ($scope.ideTabs[i].path==data.path) {
 				index=i;
 			}
 		}
 		if ( index==-1) { //新內容
-			$scope.tabs.push(data);
-			$scope.currentTab=$scope.tabs.length-1;
+			$scope.ideTabs.push(data);
+			$scope.currentTab=$scope.ideTabs.length-1;
 		}
 		else {
 			$scope.currentTab=index;
 		}
-		$scope.$digest();		
+		$scope.$digest();	
+
+		window.localStorage['tabs']=JSON.stringify($scope.ideTabs);	
 	})
 
 	$scope.$on('$ide.tabclose',function(ev,path){
 		var index;
-		for (var i=0;i<$scope.tabs.length;i++){
-			if ($scope.tabs[i].path==path) {
+		for (var i=0;i<$scope.ideTabs.length;i++){
+			if ($scope.ideTabs[i].path==path) {
 				index=i;
 			}
 		}
-		$scope.tabs.splice(index,1);
+		$scope.ideTabs.splice(index,1);
 		$scope.$digest();
+
+		window.localStorage['tabs']=JSON.stringify($scope.ideTabs);
+	})
+
+	$scope.$on('$ide.tabsloaded',function(){
+		$scope.ideTabs=$ide.getTabs();
+		$scope.$digest();
+		console.log($scope.ideTabs);
 	})
 
 	$scope.$on('$view.loaded',function(ev,_element){
@@ -75,14 +91,14 @@ angular.module('MindDesktop.ide', [])
 		    name: "save_file",
 		    bindKey: {win: "Ctrl-S", mac: "Command-Down"},
 		    exec: function(editor) {
-		    	$ide.save($scope.code,$scope.tabs[$scope.currentTab].path)
+		    	$ide.save($scope.code,$scope.ideTabs[$scope.currentTab].path)
 		    }
 		});
 	}
 
 	$scope.aceChanged=function(){
 
-	}
+	};
 
 }])
 
@@ -102,7 +118,7 @@ angular.module('MindDesktop.ide', [])
 	}
 })
 
-.factory('$ide', ['$rootScope','$q','$mdDialog', function($rootScope,$q,$mdDialog){
+.factory('$ide', ['$rootScope','$q','$mdDialog','$timeout', function($rootScope,$q,$mdDialog,$timeout){
 	var self = this;
 	// var dir = require('node-dir');
   	var fs = require('fs');
@@ -188,6 +204,8 @@ angular.module('MindDesktop.ide', [])
   	}
 
   	var renderFile=function(path,name){
+  		window.localStorage['lastPath']=path;
+
 		fs.readFile(path, 'utf8', function (err,data) {
 		  if (err) {
 		    return console.log(err);
@@ -221,10 +239,15 @@ angular.module('MindDesktop.ide', [])
 		  	name:name
 		  })
 		});
+
 	}
 
 	var getTabs=function(){
 		return tabs;
+	}
+	
+	var setTabs=function(_tabs){
+	    tabs=_tabs;
 	}
 
 	var save=function(content,path){
@@ -247,14 +270,53 @@ angular.module('MindDesktop.ide', [])
 	    };
 	};
 
+	var openFileFromPath=function(rootPath,currentPath){
+		$rootScope.$broadcast('$ide.click','C:/Users/Tony/Desktop/MindDesktop/');
+		var workArray=currentPath.replace(rootPath,'').split('/');
+		var broadcastArray=[];
+
+		for (var i=0;i<workArray.length;i++){
+			var sumPath="";
+			for (var j=0;j<i+1;j++){
+				sumPath+=workArray[j];
+				if (j!=i) {
+					sumPath+="/"
+				}
+			}
+			// console.log(sumPath);
+			broadcastArray.push(rootPath+sumPath);
+		}
+
+		broadcastArray.forEach(function(broadcastPath,index){
+			$timeout(function(){
+				$rootScope.$broadcast('$ide.click',broadcastPath);
+			},index*50)
+		})
+	}
+
+	var recoverFromHistory=function(){
+		if (window.localStorage['lastPath']){
+			self.openFileFromPath('C:/Users/Tony/Desktop/MindDesktop/',window.localStorage['lastPath']);
+		}
+		if (window.localStorage['tabs']){
+		    self.setTabs(JSON.parse(window.localStorage['tabs']));
+		    $rootScope.$broadcast('$ide.tabsloaded')
+		}
+	}
+
 	self={
 		getProjectFiles:getProjectFiles,
 		renderFile:renderFile,
+		
 		getTabs:getTabs,
+		setTabs:setTabs,
+		
 		save:save,
 		
 		showContextMenu:showContextMenu,
-		setContextMenuOperatingPath:setContextMenuOperatingPath
+		setContextMenuOperatingPath:setContextMenuOperatingPath,
+		openFileFromPath:openFileFromPath,
+		recoverFromHistory:recoverFromHistory,
 	}
 
 	return self;
@@ -295,34 +357,11 @@ angular.module('MindDesktop.ide', [])
 
 			section.html(scope.name);
 
-			if (!scope.type || scope.type=="dir"){
+			if (!scope.type || scope.type=="dir"){ // Folder
 				scope.open=false;
 				scope.sub=[];
-				
-				// Context Menu
-				if ('root' in attrs) {
-				    section.bind('contextmenu',function(e){
-    			        e.preventDefault();
-    			        $ide.setContextMenuOperatingPath(scope.path,scope.name);
-    			        $ide.showContextMenu('rootFolder',e);
-    			    })
-				}
-				else {
-				    section.bind('contextmenu',function(e){
-    			        e.preventDefault();
-    			        $ide.setContextMenuOperatingPath(scope.path,scope.name);
-    			        $ide.showContextMenu('folder',e);
-    			    })
-				}
 
-				var containerTpl="<div></div>";
-				var container=$compile(containerTpl)(scope);
-				// container.css('webkitTransition','all 0.5s ease');
-				container.css('overflow','hidden')
-				element.append(container);
-
-				section.addClass('ion-ios-arrow-right');
-				section.bind('click',function(){
+				scope.click=function(){
 					if (!scope.open) {
 						section.addClass('open')
 						if (!scope.sub || scope.sub.length==0) {
@@ -358,9 +397,39 @@ angular.module('MindDesktop.ide', [])
 					}
 					
 					scope.open=!scope.open;
+				}
+				
+				// Context Menu
+				if ('root' in attrs) {
+				    section.bind('contextmenu',function(e){
+    			        e.preventDefault();
+    			        $ide.setContextMenuOperatingPath(scope.path,scope.name);
+    			        $ide.showContextMenu('rootFolder',e);
+    			    })
+				}
+				else {
+				    section.bind('contextmenu',function(e){
+    			        e.preventDefault();
+    			        $ide.setContextMenuOperatingPath(scope.path,scope.name);
+    			        $ide.showContextMenu('folder',e);
+    			    })
+				}
+
+				var containerTpl="<div></div>";
+				var container=$compile(containerTpl)(scope);
+				// container.css('webkitTransition','all 0.5s ease');
+				container.css('overflow','hidden')
+				element.append(container);
+
+				section.addClass('ion-ios-arrow-right');
+				section.bind('click',function(){
+					scope.click()
 				})
 			}
 			else {   // File
+				scope.click=function(){
+					$ide.renderFile(scope.path,scope.name)
+				}
 			
 			    // Context Menu
 			    section.bind('contextmenu',function(e){
@@ -371,7 +440,7 @@ angular.module('MindDesktop.ide', [])
 
                 // File Render
 				section.bind('click',function(){
-					$ide.renderFile(scope.path,scope.name)
+					scope.click()
 				})
 				
 				// Listener for content Change
@@ -386,6 +455,16 @@ angular.module('MindDesktop.ide', [])
                     }
                 })
 			}
+			
+			// click Triggering
+			scope.$on('$ide.click',function(ev,path){
+			    if (path==scope.path){
+			        scope.click();
+			        // scope.$digest();
+			    }
+			})
+
+			
 			
             
 			// $ide.getProjectFiles()
@@ -409,8 +488,8 @@ angular.module('MindDesktop.ide', [])
 		// transclude: true,
 		// compile: function(tElement, tAttrs, function transclude(function(scope, cloneLinkingFn){ return function linking(scope, elm, attrs){}})),
 		link: function(scope,element,attrs) {
-			element.addClass('ide-file-tabs')
-			// element.css('width',(window.innerWidth-200)+'px')
+			element.addClass('ide-file-tabs');
+			element.css('width',(window.innerWidth-200)+'px');
 			// element.css('height','30px');
 			// element.css('position','absolute');
 			// element.css('top','70px');
