@@ -49,6 +49,18 @@ angular.module('MindDesktop.ide', [])
 				index=i;
 			}
 		}
+		if (index==0) {
+		    if ($scope.ideTabs.length>1){ // render next
+		        $ide.renderFile($scope.ideTabs[1].path,$scope.ideTabs[1].name)
+		    }
+		    else { // clear code
+		        $scope.code="";
+		    }
+		}
+		else { // render previous
+            $ide.renderFile($scope.ideTabs[index-1].path,$scope.ideTabs[1].name)
+		}
+		
 		$scope.ideTabs.splice(index,1);
 		$scope.$digest();
 

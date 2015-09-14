@@ -11,7 +11,7 @@ factory('$tabs', function(){
 	},{
 		name:'Servers',
 	},{
-		name:'IDE',
+		name:'Editor',
 	},{
 		name:'MongoDB',
 	},{
